@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:percent_indicator/percent_indicator.dart';
@@ -31,6 +32,15 @@ class _HomePageWidgetState extends State<HomePageWidget> {
     // TODO: implement initState
     super.initState();
     readAppointment();
+    findToken();
+  }
+
+  Future<Null> findToken() async {
+    await Firebase.initializeApp().then((value) async {
+      final messaging = FirebaseMessaging();
+      String token = await messaging.getToken();
+      print('token ==>> $token');
+    });
   }
 
   Future<Null> readAppointment() async {
@@ -190,7 +200,8 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                       await Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => AllAppointmentsPageWidget(models: appointmentModels),
+                          builder: (context) => AllAppointmentsPageWidget(
+                              models: appointmentModels),
                         ),
                       );
                     },
