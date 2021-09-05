@@ -1,16 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:therapist_buddy/models/appointment_model.dart';
 
 import 'package:therapist_buddy/variables.dart';
 
 class AppointmentPageWidget extends StatefulWidget {
-  const AppointmentPageWidget({Key key}) : super(key: key);
+  final AppointmentModel appointmentModel;
+  const AppointmentPageWidget({Key key, @required this.appointmentModel})
+      : super(key: key);
 
   @override
   _AppointmentPageWidgetState createState() => _AppointmentPageWidgetState();
 }
 
 class _AppointmentPageWidgetState extends State<AppointmentPageWidget> {
+  AppointmentModel model;
+  List<String> appointTimes;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    model = widget.appointmentModel;
+    appointTimes = model.appoint.split('-');
+
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -72,7 +87,7 @@ class _AppointmentPageWidgetState extends State<AppointmentPageWidget> {
                         width: double.infinity,
                         decoration: BoxDecoration(),
                         child: Text(
-                          'ธนวิชญ์ แซ่ลิ่ม',
+                          model.firstname,
                           style: GoogleFonts.getFont(
                             'Kanit',
                             color: Colors.black,
@@ -111,7 +126,7 @@ class _AppointmentPageWidgetState extends State<AppointmentPageWidget> {
                         width: double.infinity,
                         decoration: BoxDecoration(),
                         child: Text(
-                          '25 สิงหาคม 2564',
+                          model.appointdate,
                           style: GoogleFonts.getFont(
                             'Kanit',
                             color: Colors.black,
@@ -150,7 +165,7 @@ class _AppointmentPageWidgetState extends State<AppointmentPageWidget> {
                         width: double.infinity,
                         decoration: BoxDecoration(),
                         child: Text(
-                          '09.00 น.',
+                          '${appointTimes[0]} น.',
                           style: GoogleFonts.getFont(
                             'Kanit',
                             color: Colors.black,
@@ -189,7 +204,7 @@ class _AppointmentPageWidgetState extends State<AppointmentPageWidget> {
                         width: double.infinity,
                         decoration: BoxDecoration(),
                         child: Text(
-                          '12.00 น.',
+                          '${appointTimes[1]} น.',
                           style: GoogleFonts.getFont(
                             'Kanit',
                             color: Colors.black,

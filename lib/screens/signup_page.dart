@@ -1,8 +1,14 @@
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:therapist_buddy/models/pt_model.dart';
+import 'package:therapist_buddy/screens/login_page.dart';
+import 'package:therapist_buddy/utility/my_dialog.dart';
 import 'package:therapist_buddy/widgets/show_logo.dart';
 import 'package:therapist_buddy/widgets/show_title.dart';
 import '../flutter_flow/flutter_flow_widgets.dart';
@@ -36,6 +42,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
 
   File file;
   final formKey = GlobalKey<FormState>();
+  bool statusPassword8 = true;
 
   @override
   void initState() {
@@ -99,6 +106,92 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
       padding: EdgeInsets.fromLTRB(0, 20, 0, 40),
       child: FFButtonWidget(
         onPressed: () async {
+          refeshStatusPassword8();
+          if (formKey.currentState.validate()) {
+            if (file != null) {
+              String firstName = firstNameTextfieldController.text;
+              String lastName = lastNameTextfieldController.text;
+              String phoneNumber = phoneNumberTextfieldController.text;
+              String password = passwordTextfieldController.text;
+              String licenseNumber = licenseNumberTextfieldController.text;
+
+              List<String> gendles = [
+                '',
+                'ชาย',
+                'หญิง',
+                'อื่นๆ',
+                'ไม่ระบุ',
+              ];
+
+              String genderStr = gendles[genderValue];
+
+              print(
+                  'initialName = $nameTitleValue, firstName = $firstName, lastName = $lastName, phonrNumber = $phoneNumber');
+              print(
+                  'password = $password, license = $licenseNumber, workplackValue = $workplaceValue');
+              print(
+                  'dd = $birthDayValue, mm = $birthMonthValue , yy = $birthYearValue, gendle = $genderStr');
+
+              await Firebase.initializeApp().then((value) async {
+                await FirebaseFirestore.instance
+                    .collection('ptung')
+                    .doc(phoneNumber)
+                    .snapshots()
+                    .listen((event) async {
+                  print('event.data ==>  ${event.data()}');
+                  if (event.data() == null) {
+                    MyDialog().progressDialog(context);
+
+                    String nameFile = 'tp$phoneNumber.jpg';
+
+                    Reference reference =
+                        FirebaseStorage.instance.ref().child('pt/$nameFile');
+                    UploadTask task = reference.putFile(file);
+                    await task.whenComplete(() async {
+                      Navigator.pop(context);
+                      String pathAvatar = await reference.getDownloadURL();
+
+                      PtModel model = PtModel(
+                          nameTitleValue: nameTitleValue,
+                          firstName: firstName,
+                          lastName: lastName,
+                          phoneNumber: phoneNumber,
+                          password: password,
+                          licenseNumber: licenseNumber,
+                          workplaceValue: workplaceValue,
+                          birthDayValue: birthDayValue,
+                          birthMonthValue: birthMonthValue,
+                          birthYearValue: birthYearValue,
+                          genderStr: genderStr,
+                          pathAvatar: pathAvatar);
+                      Map<String, dynamic> data = model.toMap();
+
+                      await FirebaseFirestore.instance
+                          .collection('ptung')
+                          .doc(phoneNumber)
+                          .set(data)
+                          .then((value) {
+                        print('Success Insert Data');
+                        Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => LoginPageWidget(),
+                            ),
+                            (route) => false);
+                      });
+                    });
+                  } else {
+                    MyDialog().normalDialog(
+                        context, 'เบอร์ซ้ำ ?', 'เบอร์โทรนี่ มีคนอื่นใช้ไปแล้ว');
+                  }
+                });
+              });
+            } else {
+              MyDialog()
+                  .normalDialog(context, 'No Avatar ?', 'Please Take Photo');
+            }
+          } // endif
+
           // await Navigator.push(
           //   context,
           //   MaterialPageRoute(
@@ -551,6 +644,8 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
             ),
             items: <String>[
               'โรงพยาบาลสงขลานครินทร์',
+              'Hopital2',
+              'Hopital3',
             ].map<DropdownMenuItem<String>>((String value) {
               return DropdownMenuItem<String>(
                 value: value,
@@ -614,6 +709,13 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
             child: Padding(
               padding: EdgeInsets.fromLTRB(10, 0, 0, 0),
               child: TextFormField(
+                validator: (value) {
+                  if (value.isEmpty) {
+                    return 'กรุณากรอก ด้วยคะ';
+                  } else {
+                    return null;
+                  }
+                },
                 controller: licenseNumberTextfieldController,
                 obscureText: false,
                 decoration: InputDecoration(
@@ -655,6 +757,17 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
     return Padding(
       padding: EdgeInsets.fromLTRB(30, 8, 30, 0),
       child: TextFormField(
+        validator: (value) {
+          if (value.isEmpty) {
+            return 'กรุณากรอก ด้วยคะ';
+          } else {
+            if (value.toString() != passwordTextfieldController.text) {
+              return 'Repassword ไม่เหมือน Password';
+            } else {
+              return null;
+            }
+          }
+        },
         controller: repeatPasswordTextfieldController,
         obscureText: !repeatPasswordTextfieldVisibility,
         decoration: InputDecoration(
@@ -738,10 +851,27 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
     );
   }
 
+  void refeshStatusPassword8() {
+    setState(() {});
+  }
+
   Padding fieldPassword() {
     return Padding(
       padding: EdgeInsets.fromLTRB(30, 8, 30, 0),
       child: TextFormField(
+        validator: (value) {
+          if (value.isEmpty) {
+            return 'กรุณากรอก ด้วยคะ';
+          } else {
+            if (value.length < 8) {
+              statusPassword8 = false;
+              return 'Password ต้อง มากกว่า 8';
+            } else {
+              statusPassword8 = true;
+              return null;
+            }
+          }
+        },
         controller: passwordTextfieldController,
         obscureText: !passwordTextfieldVisibility,
         decoration: InputDecoration(
@@ -808,16 +938,24 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
           Align(
             alignment: Alignment(-1, 0),
             child: Padding(
-              padding: EdgeInsets.fromLTRB(5, 0, 0, 0),
-              child: Text(
-                '(ใส่รหัสผ่านอย่างน้อย 8 ตัว)',
-                style: GoogleFonts.getFont(
-                  'Kanit',
-                  color: Color(0xFFB1B2B8),
-                  fontSize: 14,
-                ),
-              ),
-            ),
+                padding: EdgeInsets.fromLTRB(5, 0, 0, 0),
+                child: statusPassword8
+                    ? Text(
+                        '(ใส่รหัสผ่านอย่างน้อย 8 ตัว)',
+                        style: GoogleFonts.getFont(
+                          'Kanit',
+                          color: Color(0xFFB1B2B8),
+                          fontSize: 14,
+                        ),
+                      )
+                    : Text(
+                        '(ใส่รหัสผ่านอย่างน้อย 8 ตัว)',
+                        style: GoogleFonts.getFont(
+                          'Kanit',
+                          color: Colors.red,
+                          fontSize: 14,
+                        ),
+                      )),
           )
         ],
       ),
@@ -872,6 +1010,13 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
               child: Padding(
                 padding: EdgeInsets.fromLTRB(10, 0, 0, 0),
                 child: TextFormField(
+                  validator: (value) {
+                    if (value.isEmpty) {
+                      return 'กรุณากรอก ด้วยคะ';
+                    } else {
+                      return null;
+                    }
+                  },
                   maxLength: 9,
                   controller: phoneNumberTextfieldController,
                   obscureText: false,
@@ -954,6 +1099,13 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
     return Padding(
       padding: EdgeInsets.fromLTRB(30, 8, 30, 0),
       child: TextFormField(
+        validator: (value) {
+          if (value.isEmpty) {
+            return 'กรุณากรอก ด้วยคะ';
+          } else {
+            return null;
+          }
+        },
         controller: lastNameTextfieldController,
         obscureText: false,
         decoration: InputDecoration(

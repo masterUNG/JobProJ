@@ -1,132 +1,85 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:percent_indicator/percent_indicator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:therapist_buddy/models/appointment_model.dart';
 
 import 'package:therapist_buddy/variables.dart';
+import 'package:therapist_buddy/widgets/show_progress.dart';
 import 'all_appointments_page.dart';
 import 'package:therapist_buddy/screens/patient_this_week_exercises_page.dart';
 import 'appointment_page.dart';
 
 class HomePageWidget extends StatefulWidget {
-  HomePageWidget({Key key}) : super(key: key);
+  HomePageWidget({
+    Key key,
+  }) : super(key: key);
 
   @override
   _HomePageWidgetState createState() => _HomePageWidgetState();
 }
 
 class _HomePageWidgetState extends State<HomePageWidget> {
+  bool statusAppointment;
+  List<AppointmentModel> appointmentModels = [];
+  List<Widget> widgets = [];
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    readAppointment();
+  }
+
+  Future<Null> readAppointment() async {
+    SharedPreferences preferences = await SharedPreferences.getInstance();
+    String docLogin = preferences.getString('phone');
+    print('docLogin = $docLogin');
+
+    await Firebase.initializeApp().then((value) async {
+      await FirebaseFirestore.instance
+          .collection('ptung')
+          .doc(docLogin)
+          .collection('appointment')
+          .snapshots()
+          .listen((event) {
+        print('event = ${event.docs}');
+        if (event.docs.length == 0) {
+          setState(() {
+            statusAppointment = false;
+          });
+        } else {
+          int index = 0;
+          for (var item in event.docs) {
+            AppointmentModel model = AppointmentModel.fromMap(item.data());
+            setState(() {
+              appointmentModels.add(model);
+              widgets.add(appointmentCard(context, model, index));
+            });
+            index++;
+          }
+
+          setState(() {
+            statusAppointment = true;
+          });
+        }
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(appbarHeight),
-        child: AppBar(
-          backgroundColor: Colors.white,
-          automaticallyImplyLeading: false,
-          leading: Padding(
-            padding: EdgeInsets.fromLTRB(20, 0, 0, 0),
-            child: Image.asset(
-              'assets/images/logo.png',
-              fit: BoxFit.fitWidth,
-            ),
-          ),
-          title: Text(
-            'TherapistBuddy',
-            style: GoogleFonts.getFont(
-              'Raleway',
-              color: primaryColor,
-              fontWeight: FontWeight.bold,
-              fontSize: 22,
-            ),
-          ),
-          actions: [],
-          centerTitle: false,
-          elevation: 2,
-        ),
-      ),
+      appBar: buildAppBar(),
       backgroundColor: Color(0xFFF5F5F5),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.max,
             children: [
-              Padding(
-                padding: EdgeInsets.fromLTRB(0, 12, 0, 0),
-                child: Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.max,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: EdgeInsets.fromLTRB(18, 18, 18, 10),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.max,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              'การนัดหมายวันนี้',
-                              style: GoogleFonts.getFont(
-                                'Kanit',
-                                color: primaryColor,
-                                fontWeight: FontWeight.w500,
-                                fontSize: 20,
-                              ),
-                            ),
-                            InkWell(
-                              onTap: () async {
-                                await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        AllAppointmentsPageWidget(),
-                                  ),
-                                );
-                              },
-                              child: Text(
-                                'ดูการนัดหมายทั้งหมด',
-                                style: GoogleFonts.getFont(
-                                  'Kanit',
-                                  color: primaryColor,
-                                  fontWeight: FontWeight.normal,
-                                  fontSize: 14,
-                                  decoration: TextDecoration.underline,
-                                ),
-                              ),
-                            )
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.fromLTRB(18, 0, 0, 18),
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.max,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Padding(
-                                padding: EdgeInsets.fromLTRB(0, 0, 6, 0),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.max,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    appointmentCard(context),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                    ],
-                  ),
-                ),
-              ),
+              buildAppointment(context),
               Padding(
                 padding: EdgeInsets.fromLTRB(0, 12, 0, 0),
                 child: Container(
@@ -203,17 +156,133 @@ class _HomePageWidgetState extends State<HomePageWidget> {
       ),
     );
   }
+
+  Widget buildAppointment(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(0, 12, 0, 0),
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.white,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.max,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: EdgeInsets.fromLTRB(18, 18, 18, 10),
+              child: Row(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    'การนัดหมายวันนี้',
+                    style: GoogleFonts.getFont(
+                      'Kanit',
+                      color: primaryColor,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 20,
+                    ),
+                  ),
+                  InkWell(
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => AllAppointmentsPageWidget(models: appointmentModels),
+                        ),
+                      );
+                    },
+                    child: Text(
+                      'ดูการนัดหมายทั้งหมด',
+                      style: GoogleFonts.getFont(
+                        'Kanit',
+                        color: primaryColor,
+                        fontWeight: FontWeight.normal,
+                        fontSize: 14,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  )
+                ],
+              ),
+            ),
+            statusAppointment == null
+                ? ShowProgress()
+                : statusAppointment
+                    ? buildListAppointment(context)
+                    : Text('วันนี้ไม่มีการนัดหมาย')
+          ],
+        ),
+      ),
+    );
+  }
+
+  Padding buildListAppointment(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(18, 0, 0, 18),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisSize: MainAxisSize.max,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: EdgeInsets.fromLTRB(0, 0, 6, 0),
+              child: Row(
+                mainAxisSize: MainAxisSize.max,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: widgets,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  PreferredSize buildAppBar() {
+    return PreferredSize(
+      preferredSize: Size.fromHeight(appbarHeight),
+      child: AppBar(
+        backgroundColor: Colors.white,
+        automaticallyImplyLeading: false,
+        leading: Padding(
+          padding: EdgeInsets.fromLTRB(20, 0, 0, 0),
+          child: Image.asset(
+            'assets/images/logo.png',
+            fit: BoxFit.fitWidth,
+          ),
+        ),
+        title: Text(
+          'TherapistBuddy',
+          style: GoogleFonts.getFont(
+            'Raleway',
+            color: primaryColor,
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+          ),
+        ),
+        actions: [],
+        centerTitle: false,
+        elevation: 2,
+      ),
+    );
+  }
 }
 
-Widget appointmentCard(context) {
+Widget appointmentCard(context, AppointmentModel model, int index) {
   return Padding(
     padding: EdgeInsets.fromLTRB(0, 0, 12, 0),
     child: InkWell(
       onTap: () async {
+        print('you click => ${model.firstname}');
         await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => AppointmentPageWidget(),
+            builder: (context) =>
+                AppointmentPageWidget(appointmentModel: model),
           ),
         );
       },
@@ -239,7 +308,7 @@ Widget appointmentCard(context) {
                   topRight: Radius.circular(5),
                 ),
                 child: Image.network(
-                  'https://picsum.photos/seed/897/600',
+                  model.pathimage,
                   width: 110,
                   height: 85,
                   fit: BoxFit.cover,
@@ -248,7 +317,7 @@ Widget appointmentCard(context) {
               Padding(
                 padding: EdgeInsets.fromLTRB(8, 8, 8, 0),
                 child: Text(
-                  'ธนวิชญ์',
+                  model.firstname,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.getFont(
                     'Kanit',
@@ -263,7 +332,7 @@ Widget appointmentCard(context) {
               Padding(
                 padding: EdgeInsets.fromLTRB(8, 0, 8, 0),
                 child: Text(
-                  'แซ่ลิ่ม',
+                  model.lastname,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.getFont(
                     'Kanit',
@@ -277,7 +346,7 @@ Widget appointmentCard(context) {
               Padding(
                 padding: EdgeInsets.fromLTRB(8, 0, 8, 8),
                 child: Text(
-                  '10.00 - 12.00 น.',
+                  model.appoint,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.getFont(
                     'Kanit',

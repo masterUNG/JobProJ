@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:therapist_buddy/variables.dart';
 import 'edit_profile_page.dart';
@@ -279,14 +280,18 @@ class _OthersPageWidgetState extends State<OthersPageWidget> {
                               TextButton(
                                 onPressed: () async {
                                   Navigator.pop(alertDialogContext);
-                                  await Navigator.pushAndRemoveUntil(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => LoginPageWidget(),
-                                    ),
-                                    (r) => false,
-                                  );
-                                  ;
+
+                                  SharedPreferences preferences =
+                                      await SharedPreferences.getInstance();
+                                  preferences.clear().then((value) {
+                                    Navigator.pushAndRemoveUntil(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => LoginPageWidget(),
+                                      ),
+                                      (r) => false,
+                                    );
+                                  });
                                 },
                                 child: Text(
                                   'ยืนยัน',
