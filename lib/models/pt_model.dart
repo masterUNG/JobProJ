@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class PtModel {
@@ -15,6 +16,7 @@ class PtModel {
   final String birthYearValue;
   final String genderStr;
   final String pathAvatar;
+  final List<String> tokens;
   PtModel({
     @required this.nameTitleValue,
     @required this.firstName,
@@ -28,6 +30,7 @@ class PtModel {
     @required this.birthYearValue,
     @required this.genderStr,
     @required this.pathAvatar,
+    @required this.tokens,
   });
 
   PtModel copyWith({
@@ -43,6 +46,7 @@ class PtModel {
     String birthYearValue,
     String genderStr,
     String pathAvatar,
+    List<String> tokens,
   }) {
     return PtModel(
       nameTitleValue: nameTitleValue ?? this.nameTitleValue,
@@ -57,6 +61,7 @@ class PtModel {
       birthYearValue: birthYearValue ?? this.birthYearValue,
       genderStr: genderStr ?? this.genderStr,
       pathAvatar: pathAvatar ?? this.pathAvatar,
+      tokens: tokens ?? this.tokens,
     );
   }
 
@@ -74,6 +79,7 @@ class PtModel {
       'birthYearValue': birthYearValue,
       'genderStr': genderStr,
       'pathAvatar': pathAvatar,
+      'tokens': tokens,
     };
   }
 
@@ -91,6 +97,7 @@ class PtModel {
       birthYearValue: map['birthYearValue'],
       genderStr: map['genderStr'],
       pathAvatar: map['pathAvatar'],
+      tokens: List<String>.from(map['tokens']),
     );
   }
 
@@ -100,7 +107,7 @@ class PtModel {
 
   @override
   String toString() {
-    return 'PtModel(nameTitleValue: $nameTitleValue, firstName: $firstName, lastName: $lastName, phoneNumber: $phoneNumber, password: $password, licenseNumber: $licenseNumber, workplaceValue: $workplaceValue, birthDayValue: $birthDayValue, birthMonthValue: $birthMonthValue, birthYearValue: $birthYearValue, genderStr: $genderStr, pathAvatar: $pathAvatar)';
+    return 'PtModel(nameTitleValue: $nameTitleValue, firstName: $firstName, lastName: $lastName, phoneNumber: $phoneNumber, password: $password, licenseNumber: $licenseNumber, workplaceValue: $workplaceValue, birthDayValue: $birthDayValue, birthMonthValue: $birthMonthValue, birthYearValue: $birthYearValue, genderStr: $genderStr, pathAvatar: $pathAvatar, tokens: $tokens)';
   }
 
   @override
@@ -119,7 +126,8 @@ class PtModel {
       other.birthMonthValue == birthMonthValue &&
       other.birthYearValue == birthYearValue &&
       other.genderStr == genderStr &&
-      other.pathAvatar == pathAvatar;
+      other.pathAvatar == pathAvatar &&
+      listEquals(other.tokens, tokens);
   }
 
   @override
@@ -135,6 +143,7 @@ class PtModel {
       birthMonthValue.hashCode ^
       birthYearValue.hashCode ^
       genderStr.hashCode ^
-      pathAvatar.hashCode;
+      pathAvatar.hashCode ^
+      tokens.hashCode;
   }
 }

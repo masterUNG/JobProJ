@@ -6,6 +6,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:therapist_buddy/models/appointment_model.dart';
+import 'package:therapist_buddy/models/pt_model.dart';
+import 'package:therapist_buddy/screens/test_sent_noti.dart';
+import 'package:therapist_buddy/utility/my_dialog.dart';
 
 import 'package:therapist_buddy/variables.dart';
 import 'package:therapist_buddy/widgets/show_progress.dart';
@@ -26,11 +29,19 @@ class _HomePageWidgetState extends State<HomePageWidget> {
   bool statusAppointment;
   List<AppointmentModel> appointmentModels = [];
   List<Widget> widgets = [];
+  String docLogin;
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
+    findDocLogin();
+  }
+
+  Future<Null> findDocLogin() async {
+    SharedPreferences preferences = await SharedPreferences.getInstance();
+    docLogin = preferences.getString('phone');
+    print('docLogin = $docLogin');
     readAppointment();
     findToken();
   }
@@ -40,14 +51,75 @@ class _HomePageWidgetState extends State<HomePageWidget> {
       final messaging = FirebaseMessaging();
       String token = await messaging.getToken();
       print('token ==>> $token');
+
+      FirebaseMessaging firebaseMessaging = FirebaseMessaging();
+      firebaseMessaging.configure(
+        onMessage: (message) async {
+          print('onMessage');
+          MyDialog().normalDialog(context, 'มี Noti มานะ คะ', 'body นะจ้ะ จาก onMessage');
+        },
+        onLaunch: (message) async {
+          print('onLauch');
+          MyDialog().normalDialog(context, 'มี Noti มานะ คะ', 'body นะจ้ะ จาก onLauch');
+        },
+        onResume: (message) async {
+          print('onResume');
+           MyDialog().normalDialog(context, 'มี Noti มานะ คะ', 'body นะจ้ะ จาก onResume');
+        },
+      );
+
+      await Firebase.initializeApp().then((value) async {
+        await FirebaseFirestore.instance
+            .collection('ptung')
+            .doc(docLogin)
+            .snapshots()
+            .listen((event) {
+          // print('event ==> ${event.data()}');
+          PtModel ptModel = PtModel.fromMap(event.data());
+          List<String> tokens = [];
+          try {
+            var resultTokens = ptModel.tokens;
+            tokens = resultTokens;
+          } catch (e) {
+            print('############ tokens ==> null');
+          }
+          print('### tokens ==>> $tokens');
+
+          if (tokens.length == 0) {
+            tokens.add(token);
+            editTokensToFirebase(tokens);
+          } else {
+            bool status = true; // true ==> ไม่มี สมาชิค Token ซ้ำกัน
+            for (var item in tokens) {
+              if (item == token) {
+                status = false; // มี Token ซำ้
+              }
+            }
+
+            if (status) {
+              tokens.add(token);
+              editTokensToFirebase(tokens);
+            } else {
+              print('Token ตัวนี่มีในฐานข้อมูลแล้ว');
+            }
+          }
+        });
+      });
     });
   }
 
-  Future<Null> readAppointment() async {
-    SharedPreferences preferences = await SharedPreferences.getInstance();
-    String docLogin = preferences.getString('phone');
-    print('docLogin = $docLogin');
+  Future<Null> editTokensToFirebase(List<String> tokens) async {
+    Map<String, dynamic> data = {};
+    data['tokens'] = tokens;
 
+    await FirebaseFirestore.instance
+        .collection('ptung')
+        .doc(docLogin)
+        .update(data)
+        .then((value) => print('### Update Token Success ####'));
+  }
+
+  Future<Null> readAppointment() async {
     await Firebase.initializeApp().then((value) async {
       await FirebaseFirestore.instance
           .collection('ptung')
@@ -275,7 +347,19 @@ class _HomePageWidgetState extends State<HomePageWidget> {
             fontSize: 22,
           ),
         ),
-        actions: [],
+        actions: [
+          IconButton(
+              onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => TestSentNoti(),
+                    ),
+                  ),
+              icon: Icon(
+                Icons.notification_add,
+                color: Colors.red,
+              ))
+        ],
         centerTitle: false,
         elevation: 2,
       ),

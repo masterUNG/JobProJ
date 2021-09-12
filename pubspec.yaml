@@ -45,6 +45,16 @@ dependencies:
   firebase_storage: ^7.0.0
   shared_preferences: ^0.5.12+4
   firebase_messaging: ^6.0.16
+  flutter_native_splash: ^0.3.2
+  dio: ^3.0.10
+
+
+flutter_native_splash:
+
+  android: true
+  ios: true
+  color: "#42a5f5"
+  image: assets/images/logo_splashScreen512.png
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

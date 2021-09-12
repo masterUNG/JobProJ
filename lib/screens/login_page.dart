@@ -39,9 +39,10 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
   }
 
   Future<Null> findUserLogin() async {
+    // print('### findUserLogin Work');
     SharedPreferences preferences = await SharedPreferences.getInstance();
     String data = preferences.getString('phone');
-    print('data = $data');
+    print(' ####### data = $data');
     if (data == null) {
       setState(() {
         load = false;
@@ -351,8 +352,9 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
           if (passwordTextfieldController.text == model.password) {
             SharedPreferences preferences =
                 await SharedPreferences.getInstance();
-            preferences.setString('phone', phoneNumber).then((value) =>  moveHomePage());
-           
+            preferences
+                .setString('phone', phoneNumber)
+                .then((value) => moveHomePage());
           } else {
             MyDialog().normalDialog(
                 context, 'Password False', 'กรุณากรอก Password ใหม่');
