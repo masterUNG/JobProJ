@@ -5,9 +5,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:therapist_buddy/models/pt_model.dart';
 import 'package:therapist_buddy/utility/my_dialog.dart';
@@ -48,6 +50,10 @@ class _EditProfilePageWidgetState extends State<EditProfilePageWidget> {
   String docId;
   String pathAvatar;
   bool nameBol = false, lastNameBol = false;
+  String chooseDateStr = 'dd-mm-yyyy';
+  String chooseTimeStr = 'HH:mm';
+  DateTime chooseDateTime;
+  TimeOfDay timeOfDay;
 
   @override
   void initState() {
@@ -83,6 +89,17 @@ class _EditProfilePageWidgetState extends State<EditProfilePageWidget> {
               TextEditingController(text: ptModel.licenseNumber);
 
           pathAvatar = ptModel.pathAvatar;
+
+          Timestamp timestamp = ptModel.birthday;
+          if (timestamp != null) {
+            // print('#### timestamp ==>> $timestamp');
+          DateTime dateTime = timestamp.toDate();
+
+          DateFormat dateFormat = DateFormat('dd MMM yyyy');
+          chooseDateStr = dateFormat.format(dateTime);
+
+          chooseTimeStr = '${dateTime.hour} : ${dateTime.minute}';
+          }
         });
       });
     });
@@ -149,74 +166,64 @@ class _EditProfilePageWidgetState extends State<EditProfilePageWidget> {
     );
   }
 
+  Future<Null> showChooseDataAppleType() async {
+    await DatePicker.showDatePicker(
+      context,
+      showTitleActions: true,
+      locale: LocaleType.th,
+      onConfirm: (time) {
+        DateTime chooseDate = time;
+        print('### chooseDate = $chooseDate');
+
+        DateFormat dateFormat = DateFormat('dd MMM yyyy');
+        setState(() {
+          chooseDateStr = dateFormat.format(chooseDate);
+        });
+      },
+    );
+  }
+
+  Future<Null> showChooseTime() async {
+    timeOfDay = TimeOfDay.now();
+    TimeOfDay chooseTimeOfDay =
+        await showTimePicker(context: context, initialTime: timeOfDay);
+    if (chooseTimeOfDay != null) {
+      print('### chooseTimeOfDay ==>> $chooseTimeOfDay');
+
+      setState(() {
+        chooseTimeStr = '${chooseTimeOfDay.hour} : ${chooseTimeOfDay.minute}';
+      });
+    }
+  }
+
+  Future<Null> showChooseDate() async {
+    DateTime dateTime = DateTime.now();
+    print('Datetime ==> $dateTime');
+
+    chooseDateTime = await showDatePicker(
+      context: context,
+      initialDate: dateTime,
+      firstDate: DateTime(dateTime.year - 5),
+      lastDate: DateTime(dateTime.year + 5),
+    );
+
+    if (chooseDateTime != null) {
+      print('### chooseDateTime = $chooseDateTime');
+
+      DateFormat dateFormat = DateFormat('dd MMM yyyy');
+      setState(() {
+        chooseDateStr = dateFormat.format(chooseDateTime);
+      });
+    }
+  }
+
   Widget buildContent(BuildContext context) {
     return SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.max,
         children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(0, 20, 0, 20),
-            child: Stack(
-              alignment: Alignment(0, 0.9),
-              children: [
-                Container(
-                  width: 125,
-                  height: 125,
-                  clipBehavior: Clip.antiAlias,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                  ),
-                  child: ptModel.pathAvatar == null
-                      ? Image.asset(
-                          'assets/images/profileDefault_pic.png',
-                          fit: BoxFit.cover,
-                        )
-                      : file == null
-                          ? CachedNetworkImage(
-                              imageUrl: ptModel.pathAvatar,
-                              placeholder: (context, url) => ShowProgress(),
-                              fit: BoxFit.cover,
-                            )
-                          : Image.file(
-                              file,
-                              fit: BoxFit.cover,
-                            ),
-                ),
-                Align(
-                  alignment: Alignment(0.25, 0),
-                  child: Container(
-                    width: 30,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: Color(0xFFF0F2F5),
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                        onPressed: () => takePhoto(),
-                        icon: Icon(
-                          Icons.edit_rounded,
-                          color: Colors.black,
-                          size: 16,
-                        )),
-                  ),
-                )
-              ],
-            ),
-          ),
-          Align(
-            alignment: Alignment(-1, 0),
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(30, 0, 0, 0),
-              child: Text(
-                'ชื่อ',
-                style: GoogleFonts.getFont(
-                  'Kanit',
-                  color: Colors.black,
-                  fontSize: 18,
-                ),
-              ),
-            ),
-          ),
+          buildAvatar(),
+          buildTitleName(),
           Padding(
             padding: EdgeInsets.fromLTRB(30, 8, 30, 0),
             child: Row(
@@ -719,293 +726,10 @@ class _EditProfilePageWidgetState extends State<EditProfilePageWidget> {
               ),
             ),
           ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(30, 8, 30, 0),
-            child: Row(
-              mainAxisSize: MainAxisSize.max,
-              children: [
-                Container(
-                  width: (MediaQuery.of(context).size.width - 60 - 20) / 3,
-                  height: 49,
-                  padding: const EdgeInsets.only(left: 20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(defaultBorderRadius),
-                    border: Border.all(
-                      color: secondaryColor,
-                      width: 1,
-                    ),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: birthDayValue,
-                      style: TextStyle(
-                        fontFamily: 'Kanit',
-                        fontSize: 14,
-                        color: Colors.black,
-                      ),
-                      items: <String>[
-                        '1',
-                        '2',
-                        '3',
-                        '4',
-                        '5',
-                        '6',
-                        '7',
-                        '8',
-                        '9',
-                        '10',
-                        '11',
-                        '12',
-                        '13',
-                        '14',
-                        '15',
-                        '16',
-                        '17',
-                        '18',
-                        '19',
-                        '20',
-                        '21',
-                        '22',
-                        '23',
-                        '24',
-                        '25',
-                        '26',
-                        '27',
-                        '28',
-                        '29',
-                        '30',
-                        '31',
-                      ].map<DropdownMenuItem<String>>((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
-                      onChanged: (String value) {
-                        setState(() {
-                          birthDayValue = value;
-                        });
-                      },
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.fromLTRB(10, 0, 0, 0),
-                  child: Container(
-                    width: (MediaQuery.of(context).size.width - 60 - 20) / 3,
-                    height: 49,
-                    padding: const EdgeInsets.only(left: 20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(defaultBorderRadius),
-                      border: Border.all(
-                        color: secondaryColor,
-                        width: 1,
-                      ),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: birthMonthValue,
-                        style: TextStyle(
-                          fontFamily: 'Kanit',
-                          fontSize: 14,
-                          color: Colors.black,
-                        ),
-                        items: <String>[
-                          'ม.ค.',
-                          'ก.พ.',
-                          'มี.ค.',
-                          'เม.ย.',
-                          'พ.ค.',
-                          'มิ.ย.',
-                          'ก.ค.',
-                          'ส.ค.',
-                          'ก.ย.',
-                          'ต.ค.',
-                          'พ.ย.',
-                          'ธ.ค.',
-                        ].map<DropdownMenuItem<String>>((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(value),
-                          );
-                        }).toList(),
-                        onChanged: (String value) {
-                          setState(() {
-                            birthMonthValue = value;
-                          });
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.fromLTRB(10, 0, 0, 0),
-                  child: Container(
-                    width: (MediaQuery.of(context).size.width - 60 - 20) / 3,
-                    height: 49,
-                    padding: const EdgeInsets.only(left: 20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(defaultBorderRadius),
-                      border: Border.all(
-                        color: secondaryColor,
-                        width: 1,
-                      ),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: birthYearValue,
-                        style: TextStyle(
-                          fontFamily: 'Kanit',
-                          fontSize: 14,
-                          color: Colors.black,
-                        ),
-                        items: <String>[
-                          '2440',
-                          '2441',
-                          '2442',
-                          '2443',
-                          '2444',
-                          '2445',
-                          '2446',
-                          '2447',
-                          '2448',
-                          '2449',
-                          '2450',
-                          '2451',
-                          '2452',
-                          '2453',
-                          '2454',
-                          '2455',
-                          '2456',
-                          '2457',
-                          '2458',
-                          '2459',
-                          '2460',
-                          '2461',
-                          '2462',
-                          '2463',
-                          '2464',
-                          '2465',
-                          '2466',
-                          '2467',
-                          '2468',
-                          '2469',
-                          '2470',
-                          '2471',
-                          '2472',
-                          '2473',
-                          '2474',
-                          '2475',
-                          '2476',
-                          '2477',
-                          '2478',
-                          '2479',
-                          '2480',
-                          '2481',
-                          '2482',
-                          '2483',
-                          '2484',
-                          '2485',
-                          '2486',
-                          '2487',
-                          '2488',
-                          '2489',
-                          '2490',
-                          '2491',
-                          '2492',
-                          '2493',
-                          '2494',
-                          '2495',
-                          '2496',
-                          '2497',
-                          '2498',
-                          '2499',
-                          '2500',
-                          '2501',
-                          '2502',
-                          '2503',
-                          '2504',
-                          '2505',
-                          '2506',
-                          '2507',
-                          '2508',
-                          '2509',
-                          '2510',
-                          '2511',
-                          '2512',
-                          '2513',
-                          '2514',
-                          '2515',
-                          '2516',
-                          '2517',
-                          '2518',
-                          '2519',
-                          '2520',
-                          '2521',
-                          '2522',
-                          '2523',
-                          '2524',
-                          '2525',
-                          '2526',
-                          '2527',
-                          '2528',
-                          '2529',
-                          '2530',
-                          '2531',
-                          '2532',
-                          '2533',
-                          '2534',
-                          '2535',
-                          '2536',
-                          '2537',
-                          '2538',
-                          '2539',
-                          '2540',
-                          '2541',
-                          '2542',
-                          '2543',
-                          '2544',
-                          '2545',
-                          '2546',
-                          '2547',
-                          '2548',
-                          '2549',
-                          '2550',
-                          '2551',
-                          '2552',
-                          '2553',
-                          '2554',
-                          '2555',
-                          '2556',
-                          '2557',
-                          '2558',
-                          '2559',
-                          '2560',
-                          '2561',
-                          '2562',
-                          '2563',
-                          '2564',
-                        ].map<DropdownMenuItem<String>>((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(value),
-                          );
-                        }).toList(),
-                        onChanged: (String value) {
-                          setState(() {
-                            birthYearValue = value;
-                          });
-                        },
-                      ),
-                    ),
-                  ),
-                )
-              ],
-            ),
-          ),
+          // showBirthDayOld(context),
+          showBirthDayCalendar(),
+
+          buildChooseTime(),
           Align(
             alignment: Alignment(-1, 0),
             child: Padding(
@@ -1164,6 +888,400 @@ class _EditProfilePageWidgetState extends State<EditProfilePageWidget> {
     );
   }
 
+  Container buildChooseTime() {
+    return Container(
+      width: 250,
+      child: ListTile(
+        title: Text(chooseTimeStr),
+        trailing: IconButton(
+          onPressed: () => showChooseTime(),
+          icon: Icon(Icons.timer),
+        ),
+      ),
+    );
+  }
+
+  Container showBirthDayCalendar() {
+    return Container(
+      width: 250,
+      child: ListTile(
+        title: Text(chooseDateStr),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              onPressed: () => showChooseDate(),
+              icon: Icon(Icons.calendar_today),
+            ),
+            IconButton(
+              onPressed: () => showChooseDataAppleType(),
+              icon: Icon(Icons.settings_applications_rounded),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Padding showBirthDayOld(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(30, 8, 30, 0),
+      child: Row(
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          Container(
+            width: (MediaQuery.of(context).size.width - 60 - 20) / 3,
+            height: 49,
+            padding: const EdgeInsets.only(left: 20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(defaultBorderRadius),
+              border: Border.all(
+                color: secondaryColor,
+                width: 1,
+              ),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: birthDayValue,
+                style: TextStyle(
+                  fontFamily: 'Kanit',
+                  fontSize: 14,
+                  color: Colors.black,
+                ),
+                items: <String>[
+                  '1',
+                  '2',
+                  '3',
+                  '4',
+                  '5',
+                  '6',
+                  '7',
+                  '8',
+                  '9',
+                  '10',
+                  '11',
+                  '12',
+                  '13',
+                  '14',
+                  '15',
+                  '16',
+                  '17',
+                  '18',
+                  '19',
+                  '20',
+                  '21',
+                  '22',
+                  '23',
+                  '24',
+                  '25',
+                  '26',
+                  '27',
+                  '28',
+                  '29',
+                  '30',
+                  '31',
+                ].map<DropdownMenuItem<String>>((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+                onChanged: (String value) {
+                  setState(() {
+                    birthDayValue = value;
+                  });
+                },
+              ),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(10, 0, 0, 0),
+            child: Container(
+              width: (MediaQuery.of(context).size.width - 60 - 20) / 3,
+              height: 49,
+              padding: const EdgeInsets.only(left: 20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(defaultBorderRadius),
+                border: Border.all(
+                  color: secondaryColor,
+                  width: 1,
+                ),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: birthMonthValue,
+                  style: TextStyle(
+                    fontFamily: 'Kanit',
+                    fontSize: 14,
+                    color: Colors.black,
+                  ),
+                  items: <String>[
+                    'ม.ค.',
+                    'ก.พ.',
+                    'มี.ค.',
+                    'เม.ย.',
+                    'พ.ค.',
+                    'มิ.ย.',
+                    'ก.ค.',
+                    'ส.ค.',
+                    'ก.ย.',
+                    'ต.ค.',
+                    'พ.ย.',
+                    'ธ.ค.',
+                  ].map<DropdownMenuItem<String>>((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  onChanged: (String value) {
+                    setState(() {
+                      birthMonthValue = value;
+                    });
+                  },
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(10, 0, 0, 0),
+            child: Container(
+              width: (MediaQuery.of(context).size.width - 60 - 20) / 3,
+              height: 49,
+              padding: const EdgeInsets.only(left: 20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(defaultBorderRadius),
+                border: Border.all(
+                  color: secondaryColor,
+                  width: 1,
+                ),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: birthYearValue,
+                  style: TextStyle(
+                    fontFamily: 'Kanit',
+                    fontSize: 14,
+                    color: Colors.black,
+                  ),
+                  items: <String>[
+                    '2440',
+                    '2441',
+                    '2442',
+                    '2443',
+                    '2444',
+                    '2445',
+                    '2446',
+                    '2447',
+                    '2448',
+                    '2449',
+                    '2450',
+                    '2451',
+                    '2452',
+                    '2453',
+                    '2454',
+                    '2455',
+                    '2456',
+                    '2457',
+                    '2458',
+                    '2459',
+                    '2460',
+                    '2461',
+                    '2462',
+                    '2463',
+                    '2464',
+                    '2465',
+                    '2466',
+                    '2467',
+                    '2468',
+                    '2469',
+                    '2470',
+                    '2471',
+                    '2472',
+                    '2473',
+                    '2474',
+                    '2475',
+                    '2476',
+                    '2477',
+                    '2478',
+                    '2479',
+                    '2480',
+                    '2481',
+                    '2482',
+                    '2483',
+                    '2484',
+                    '2485',
+                    '2486',
+                    '2487',
+                    '2488',
+                    '2489',
+                    '2490',
+                    '2491',
+                    '2492',
+                    '2493',
+                    '2494',
+                    '2495',
+                    '2496',
+                    '2497',
+                    '2498',
+                    '2499',
+                    '2500',
+                    '2501',
+                    '2502',
+                    '2503',
+                    '2504',
+                    '2505',
+                    '2506',
+                    '2507',
+                    '2508',
+                    '2509',
+                    '2510',
+                    '2511',
+                    '2512',
+                    '2513',
+                    '2514',
+                    '2515',
+                    '2516',
+                    '2517',
+                    '2518',
+                    '2519',
+                    '2520',
+                    '2521',
+                    '2522',
+                    '2523',
+                    '2524',
+                    '2525',
+                    '2526',
+                    '2527',
+                    '2528',
+                    '2529',
+                    '2530',
+                    '2531',
+                    '2532',
+                    '2533',
+                    '2534',
+                    '2535',
+                    '2536',
+                    '2537',
+                    '2538',
+                    '2539',
+                    '2540',
+                    '2541',
+                    '2542',
+                    '2543',
+                    '2544',
+                    '2545',
+                    '2546',
+                    '2547',
+                    '2548',
+                    '2549',
+                    '2550',
+                    '2551',
+                    '2552',
+                    '2553',
+                    '2554',
+                    '2555',
+                    '2556',
+                    '2557',
+                    '2558',
+                    '2559',
+                    '2560',
+                    '2561',
+                    '2562',
+                    '2563',
+                    '2564',
+                  ].map<DropdownMenuItem<String>>((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  onChanged: (String value) {
+                    setState(() {
+                      birthYearValue = value;
+                    });
+                  },
+                ),
+              ),
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  Align buildTitleName() {
+    return Align(
+      alignment: Alignment(-1, 0),
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(30, 0, 0, 0),
+        child: Text(
+          'ชื่อ',
+          style: GoogleFonts.getFont(
+            'Kanit',
+            color: Colors.black,
+            fontSize: 18,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Padding buildAvatar() {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(0, 20, 0, 20),
+      child: Stack(
+        alignment: Alignment(0, 0.9),
+        children: [
+          Container(
+            width: 125,
+            height: 125,
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+            ),
+            child: ptModel.pathAvatar == null
+                ? Image.asset(
+                    'assets/images/profileDefault_pic.png',
+                    fit: BoxFit.cover,
+                  )
+                : file == null
+                    ? CachedNetworkImage(
+                        imageUrl: ptModel.pathAvatar,
+                        placeholder: (context, url) => ShowProgress(),
+                        fit: BoxFit.cover,
+                      )
+                    : Image.file(
+                        file,
+                        fit: BoxFit.cover,
+                      ),
+          ),
+          Align(
+            alignment: Alignment(0.25, 0),
+            child: Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: Color(0xFFF0F2F5),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                  onPressed: () => takePhoto(),
+                  icon: Icon(
+                    Icons.edit_rounded,
+                    color: Colors.black,
+                    size: 16,
+                  )),
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
   Future<Null> processUploadImage() async {
     await Firebase.initializeApp().then((value) async {
       String nameImage = 'tp$docId.jpg';
@@ -1193,6 +1311,18 @@ class _EditProfilePageWidgetState extends State<EditProfilePageWidget> {
     }
 
     data['pathAvatar'] = pathAvatar;
+
+    Timestamp timestamp = Timestamp.fromDate(
+      DateTime(
+        chooseDateTime.year,
+        chooseDateTime.month,
+        chooseDateTime.day,
+        timeOfDay.hour,
+        timeOfDay.minute,
+      ),
+    );
+
+    data['birthday'] = timestamp;
 
     print('### data ==>> $data');
 

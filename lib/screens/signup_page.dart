@@ -163,7 +163,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                           birthMonthValue: birthMonthValue,
                           birthYearValue: birthYearValue,
                           genderStr: genderStr,
-                          pathAvatar: pathAvatar, tokens: []);
+                          pathAvatar: pathAvatar, tokens: [], birthday: Timestamp.fromDate(DateTime(2021)));
                       Map<String, dynamic> data = model.toMap();
 
                       await FirebaseFirestore.instance
