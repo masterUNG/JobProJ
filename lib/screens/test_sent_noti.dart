@@ -51,37 +51,39 @@ class _TestSentNotiState extends State<TestSentNoti> {
       body: LayoutBuilder(
         builder: (context, constraints) => ptModels.length == 0
             ? ShowProgress()
-            : ListView.builder(
-                itemCount: ptModels.length,
-                itemBuilder: (context, index) => GestureDetector(
-                  onTap: () {
-                    print('You Tap index = $index');
-                    confirmDialog(ptModels[index]);
-                  },
-                  child: Card(
-                    color: index % 2 == 0 ? Colors.grey.shade300 : Colors.white,
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              ShowTitle(title: ptModels[index].firstName),
-                              ShowTitle(title: ptModels[index].lastName)
-                            ],
-                          ),
-                          Row(
-                            children: [
-                              ShowTitle(title: 'License Number :'),
-                              Text(ptModels[index].licenseNumber),
-                            ],
-                          ),
-                        ],
+            : Container(width: constraints.maxWidth*0.8,
+              child: ListView.builder(
+                  itemCount: ptModels.length,
+                  itemBuilder: (context, index) => GestureDetector(
+                    onTap: () {
+                      print('You Tap index = $index');
+                      confirmDialog(ptModels[index]);
+                    },
+                    child: Card(
+                      color: index % 2 == 0 ? Colors.grey.shade300 : Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                ShowTitle(title: ptModels[index].firstName),
+                                ShowTitle(title: ptModels[index].lastName)
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                ShowTitle(title: 'License Number :'),
+                                Text(ptModels[index].licenseNumber),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
+            ),
       ),
     );
   }

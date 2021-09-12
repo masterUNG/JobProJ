@@ -3,6 +3,7 @@ import 'package:therapist_buddy/widgets/show_logo.dart';
 import 'package:therapist_buddy/widgets/show_title.dart';
 
 class MyDialog {
+  
   Future<Null> normalDialog(
       BuildContext context, String title, String message) async {
     showDialog(
