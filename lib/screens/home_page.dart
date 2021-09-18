@@ -48,25 +48,44 @@ class _HomePageWidgetState extends State<HomePageWidget> {
 
   Future<Null> findToken() async {
     await Firebase.initializeApp().then((value) async {
-      final messaging = FirebaseMessaging();
+      FirebaseMessaging firebaseMessaging = FirebaseMessaging.instance;
+
+      NotificationSettings settings = await firebaseMessaging.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
+      );
+
+      print('#### User granted permission: ${settings.authorizationStatus}');
+
+      FirebaseMessaging messaging = FirebaseMessaging.instance;
       String token = await messaging.getToken();
       print('token ==>> $token');
 
-      FirebaseMessaging firebaseMessaging = FirebaseMessaging();
-      firebaseMessaging.configure(
-        onMessage: (message) async {
-          print('onMessage');
-          MyDialog().normalDialog(context, 'มี Noti มานะ คะ', 'body นะจ้ะ จาก onMessage');
-        },
-        onLaunch: (message) async {
-          print('onLauch');
-          MyDialog().normalDialog(context, 'มี Noti มานะ คะ', 'body นะจ้ะ จาก onLauch');
-        },
-        onResume: (message) async {
-          print('onResume');
-           MyDialog().normalDialog(context, 'มี Noti มานะ คะ', 'body นะจ้ะ จาก onResume');
-        },
-      );
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        print('###### แสดงการทำงานของ foreground!');
+        print('######  Message data: ${message.data}');
+
+        String title = 'มี Noti เกิดชึ้น';
+        String body = 'มีการแจ้งเตือนเกิดขึ้น';
+
+        if (message.data.toString() != '{}') {
+          Map<String, dynamic> map = message.data;
+          title = map['title'];
+          body = map['body'];
+        }
+
+        MyDialog().normalDialog(context, title, body);
+
+        if (message.notification != null) {
+          print(
+              '#######  Message also contained a notification: ${message.notification}');
+        }
+      });
 
       await Firebase.initializeApp().then((value) async {
         await FirebaseFirestore.instance

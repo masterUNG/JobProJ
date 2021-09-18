@@ -159,7 +159,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                   Expanded(
                     child: Padding(
                       padding: EdgeInsets.fromLTRB(5, 0, 0, 0),
-                      child: TextFormField(
+                      child: TextFormField(maxLength: 9,
                         validator: (value) {
                           if (value.isEmpty) {
                             return 'กรุณากรอกหมายเลยโทรศัพท์';

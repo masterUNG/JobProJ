@@ -1,6 +1,12 @@
+import 'dart:io';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:therapist_buddy/models/pt_model.dart';
 
 import 'package:therapist_buddy/variables.dart';
 import 'edit_profile_page.dart';
@@ -283,14 +289,59 @@ class _OthersPageWidgetState extends State<OthersPageWidget> {
 
                                   SharedPreferences preferences =
                                       await SharedPreferences.getInstance();
-                                  preferences.clear().then((value) {
-                                    Navigator.pushAndRemoveUntil(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => LoginPageWidget(),
-                                      ),
-                                      (r) => false,
-                                    );
+
+                                  String docId = preferences.getString('phone');
+
+                                  preferences.clear().then((value) async {
+                                    await Firebase.initializeApp()
+                                        .then((value) async {
+                                      String currentToken =
+                                          await FirebaseMessaging.instance
+                                              .getToken();
+
+                                      await FirebaseMessaging.instance
+                                          .deleteToken()
+                                          .then((value) async {
+                                        await FirebaseFirestore.instance
+                                            .collection('ptung')
+                                            .doc(docId)
+                                            .snapshots()
+                                            .listen((event) async {
+                                          bool status = true;
+                                          if (status) {
+                                            status = false;
+                                            PtModel ptModel =
+                                                PtModel.fromMap(event.data());
+                                            List<String> tokens =
+                                                ptModel.tokens;
+                                            print('Old tokens ==> $tokens');
+                                            tokens.remove(currentToken);
+                                            print('New tokens ==> $tokens');
+
+                                            Map<String, dynamic> data = {};
+                                            data['tokens'] = tokens;
+
+                                            await FirebaseFirestore.instance
+                                                .collection('ptung')
+                                                .doc(docId)
+                                                .update(data)
+                                                .then((value) {
+                                              exit(0);
+
+                                              // Navigator.pushAndRemoveUntil(
+                                              //   context,
+                                              //   MaterialPageRoute(
+                                              //     builder: (context) =>
+                                              //         LoginPageWidget(),
+                                              //   ),
+                                              //   (r) => false,
+                                              // );
+                                            });
+                                          }
+// thread update
+                                        }); // thread read
+                                      });
+                                    });
                                   });
                                 },
                                 child: Text(

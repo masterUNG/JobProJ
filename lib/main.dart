@@ -1,5 +1,8 @@
+import 'package:connectivity/connectivity.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:therapist_buddy/screens/no_internet.dart';
 import 'package:therapist_buddy/variables.dart';
 import 'auth/firebase_user_provider.dart';
 
@@ -10,9 +13,31 @@ import 'screens/add_treatment_page.dart';
 import 'screens/chats_page.dart';
 import 'screens/others_page.dart';
 
-void main() async {
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // If you're going to use other Firebase services in the background, such as Firestore,
+  // make sure you call `initializeApp` before using other Firebase services.
+  await Firebase.initializeApp();
+  print("##### Handling a background message: ${message.data}");
+}
+
+final Map<String, WidgetBuilder> map = {
+  '/login': (BuildContext context) => LoginPageWidget(),
+  '/noInternet': (BuildContext context) => NoInterner(),
+};
+
+String initialRoute = '/login';
+
+Future<Null> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  var result = await Connectivity().checkConnectivity();
+  print('result checkInternet ==> $result');
+  if (result == ConnectivityResult.none) {
+    // No Internet
+    initialRoute = '/noInternet';
+  }
   runApp(MyApp());
 }
 
@@ -26,31 +51,23 @@ class _MyAppState extends State<MyApp> {
   Stream<TherapistBuddyFirebaseUser> userStream;
   TherapistBuddyFirebaseUser initialUser;
 
+  Widget myWidget = LoginPageWidget();
+
   @override
   void initState() {
     super.initState();
-    userStream = therapistBuddyFirebaseUserStream()
-      ..listen((user) => initialUser ?? setState(() => initialUser = user));
+    
   }
+
+ 
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'TherapistBuddy',
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: initialUser == null
-          ? Center(
-              child: Builder(
-                builder: (context) => Image.asset(
-                  'assets/images/logo_splashScreen.png',
-                  width: MediaQuery.of(context).size.width / 1.625,
-                  fit: BoxFit.fitWidth,
-                ),
-              ),
-            )
-          : currentUser.loggedIn
-              ? NavBarPage()
-              : LoginPageWidget(),
+      routes: map,
+      initialRoute: initialRoute,
     );
   }
 }

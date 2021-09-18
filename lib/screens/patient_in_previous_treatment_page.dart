@@ -975,13 +975,13 @@ class _PatientInPreviousTreatmentPageWidgetState
                                             show: true,
                                             bottomTitles: SideTitles(
                                               showTitles: true,
-                                              getTextStyles: (value) {
-                                                return TextStyle(
-                                                  color: Colors.black,
-                                                  fontFamily: 'Kanit',
-                                                  fontSize: 15,
-                                                );
-                                              },
+                                              // getTextStyles: (value) {
+                                              //   return TextStyle(
+                                              //     color: Colors.black,
+                                              //     fontFamily: 'Kanit',
+                                              //     fontSize: 15,
+                                              //   );
+                                              // },
                                               getTitles: (value) {
                                                 switch (value.toInt()) {
                                                   case 0:
@@ -999,13 +999,13 @@ class _PatientInPreviousTreatmentPageWidgetState
                                             ),
                                             leftTitles: SideTitles(
                                               showTitles: true,
-                                              getTextStyles: (value) {
-                                                return TextStyle(
-                                                  color: Colors.black,
-                                                  fontFamily: 'Kanit',
-                                                  fontSize: 15,
-                                                );
-                                              },
+                                              // getTextStyles: (value) {
+                                              //   return TextStyle(
+                                              //     color: Colors.black,
+                                              //     fontFamily: 'Kanit',
+                                              //     fontSize: 15,
+                                              //   );
+                                              // },
                                               getTitles: (value) {
                                                 switch (value.toInt()) {
                                                   case 1:
