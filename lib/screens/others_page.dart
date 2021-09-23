@@ -22,6 +22,38 @@ class OthersPageWidget extends StatefulWidget {
 }
 
 class _OthersPageWidgetState extends State<OthersPageWidget> {
+  String currentToken;
+  PtModel ptModel;
+  String docId;
+
+  @override
+  void initState() {
+    super.initState();
+    findUser();
+  }
+
+  Future<Null> findUser() async {
+    SharedPreferences preferences = await SharedPreferences.getInstance();
+
+    docId = preferences.getString('phone');
+
+    await Firebase.initializeApp().then((value) async {
+      currentToken = await FirebaseMessaging.instance.getToken();
+
+      await FirebaseFirestore.instance
+          .collection('ptung')
+          .doc(docId)
+          .snapshots()
+          .listen((event) async {
+        bool status = true;
+        if (status) {
+          status = false;
+          ptModel = PtModel.fromMap(event.data());
+        }
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -287,63 +319,46 @@ class _OthersPageWidgetState extends State<OthersPageWidget> {
                                 onPressed: () async {
                                   Navigator.pop(alertDialogContext);
 
-                                  SharedPreferences preferences =
-                                      await SharedPreferences.getInstance();
+                                  // print('อยู่ที่ token ==>> $currentToken');
 
-                                  String docId = preferences.getString('phone');
+                                  // await FirebaseFirestore.instance
+                                  //     .collection('ptung')
+                                  //     .doc(docId)
+                                  //     .collection('mytoken')
+                                  //     .where('token', isEqualTo: currentToken)
+                                  //     .snapshots()
+                                  //     .listen((event) async {
+                                  //   bool status = true;
+                                  //   if (status) {
+                                  //     status = false;
+                                  //     for (var item in event.docs) {
+                                  //       String docIdMyToken = item.id;
+                                  //       print(
+                                  //           '### docIdMyToken ==> $docIdMyToken');
+                                  //       await FirebaseFirestore.instance
+                                  //           .collection('ptung')
+                                  //           .doc(docId)
+                                  //           .collection('mytoken')
+                                  //           .doc(docIdMyToken)
+                                  //           .delete()
+                                  //           .then((value) async {
+                                  //         SharedPreferences preferences =
+                                  //             await SharedPreferences
+                                  //                 .getInstance();
+                                  //         preferences.clear();
 
-                                  preferences.clear().then((value) async {
-                                    await Firebase.initializeApp()
-                                        .then((value) async {
-                                      String currentToken =
-                                          await FirebaseMessaging.instance
-                                              .getToken();
+                                  //         await FirebaseMessaging.instance
+                                  //             .deleteToken();
 
-                                      await FirebaseMessaging.instance
-                                          .deleteToken()
-                                          .then((value) async {
-                                        await FirebaseFirestore.instance
-                                            .collection('ptung')
-                                            .doc(docId)
-                                            .snapshots()
-                                            .listen((event) async {
-                                          bool status = true;
-                                          if (status) {
-                                            status = false;
-                                            PtModel ptModel =
-                                                PtModel.fromMap(event.data());
-                                            List<String> tokens =
-                                                ptModel.tokens;
-                                            print('Old tokens ==> $tokens');
-                                            tokens.remove(currentToken);
-                                            print('New tokens ==> $tokens');
-
-                                            Map<String, dynamic> data = {};
-                                            data['tokens'] = tokens;
-
-                                            await FirebaseFirestore.instance
-                                                .collection('ptung')
-                                                .doc(docId)
-                                                .update(data)
-                                                .then((value) {
-                                              exit(0);
-
-                                              // Navigator.pushAndRemoveUntil(
-                                              //   context,
-                                              //   MaterialPageRoute(
-                                              //     builder: (context) =>
-                                              //         LoginPageWidget(),
-                                              //   ),
-                                              //   (r) => false,
-                                              // );
-                                            });
-                                          }
-// thread update
-                                        }); // thread read
-                                      });
-                                    });
-                                  });
-                                },
+                                  //         Navigator.pushNamedAndRemoveUntil(
+                                  //             context,
+                                  //             '/login',
+                                  //             (route) => false);
+                                  //       });
+                                  //     }
+                                  //   }
+                                  // });
+                                }, //end
                                 child: Text(
                                   'ยืนยัน',
                                   style: GoogleFonts.getFont(

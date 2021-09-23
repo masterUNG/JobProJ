@@ -2,6 +2,7 @@ import 'package:connectivity/connectivity.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:therapist_buddy/screens/no_internet.dart';
 import 'package:therapist_buddy/variables.dart';
 import 'auth/firebase_user_provider.dart';
@@ -23,9 +24,10 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 final Map<String, WidgetBuilder> map = {
   '/login': (BuildContext context) => LoginPageWidget(),
   '/noInternet': (BuildContext context) => NoInterner(),
+  '/navBarPage': (BuildContext context) => NavBarPage(),
 };
 
-String initialRoute = '/login';
+String initialRoute;
 
 Future<Null> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,8 +39,19 @@ Future<Null> main() async {
   if (result == ConnectivityResult.none) {
     // No Internet
     initialRoute = '/noInternet';
+    runApp(MyApp());
+  } else {
+    SharedPreferences preferences = await SharedPreferences.getInstance();
+    String phone = preferences.getString('phone');
+    print('#### phone =====>>>> $phone');
+    if (phone == null) {
+      initialRoute = '/login';
+      runApp(MyApp());
+    } else {
+      initialRoute = '/navBarPage';
+      runApp(MyApp());
+    }
   }
-  runApp(MyApp());
 }
 
 class MyApp extends StatefulWidget {
@@ -56,10 +69,7 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    
   }
-
- 
 
   @override
   Widget build(BuildContext context) {

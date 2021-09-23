@@ -1,9 +1,12 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 import 'package:therapist_buddy/main.dart';
+import 'package:therapist_buddy/models/exercise_require_model.dart';
 import 'package:therapist_buddy/screens/patient_profile_page.dart';
 import 'package:therapist_buddy/screens/treatment_details_page.dart';
 import 'package:therapist_buddy/variables.dart';
@@ -23,6 +26,74 @@ class PatientPageWidget extends StatefulWidget {
 
 class _PatientPageWidgetState extends State<PatientPageWidget> {
   double actionButtonsHeight = 75;
+
+  List<ExerciseRequireModel> exerciseRequireModels = [];
+  String docId = '123123123';
+  DateTime startDateTime, endDateTime;
+  int dayDif;
+  int weekInt;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    readData();
+  }
+
+  Future<void> readData() async {
+    await Firebase.initializeApp().then((value) async {
+      await FirebaseFirestore.instance
+          .collection('sick')
+          .doc(docId)
+          .collection('exerciseRequire')
+          .snapshots()
+          .listen((event) {
+        int difCheck = 0;
+        int endCheck = 0;
+        for (var item in event.docs) {
+          ExerciseRequireModel model =
+              ExerciseRequireModel.fromMap(item.data());
+          int difInt =
+              DateTime.now().difference(model.currentDate.toDate()).inMinutes;
+          int endInt =
+              model.endDate.toDate().difference(DateTime.now()).inMinutes;
+
+          // print('#### difInt ====>>> $difInt');
+
+          if (difCheck < difInt) {
+            difCheck = difInt;
+            setState(() {
+              startDateTime = model.currentDate.toDate();
+            });
+          }
+
+          if (endCheck < endInt) {
+            endCheck = endInt;
+            setState(() {
+              endDateTime = model.endDate.toDate();
+            });
+          }
+
+          setState(() {
+            exerciseRequireModels.add(model);
+          });
+        }
+
+        dayDif = endDateTime.difference(startDateTime).inDays;
+
+        double weekDou = dayDif.toDouble() / 7.0;
+        setState(() {
+          weekInt = weekDou.ceil();
+        });
+
+        print('##### startDateTime ==>> $startDateTime');
+        print('##### endDateTime ==>> $endDateTime');
+        print('##### dayDif ==>> $dayDif');
+        print('##### weekDou ==>> $weekDou');
+        print('##### weekInt ==>> $weekInt');
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -919,7 +990,7 @@ class _PatientPageWidgetState extends State<PatientPageWidget> {
                                                               .start,
                                                       children: [
                                                         Text(
-                                                          '6 สัปดาห์ที่',
+                                                          weekInt == null ? 'x สัปดาห์ที่' :  '$weekInt สัปดาห์ที่',
                                                           style: GoogleFonts
                                                               .getFont(
                                                             'Kanit',

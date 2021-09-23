@@ -62,10 +62,6 @@ class _HomePageWidgetState extends State<HomePageWidget> {
 
       print('#### User granted permission: ${settings.authorizationStatus}');
 
-      FirebaseMessaging messaging = FirebaseMessaging.instance;
-      String token = await messaging.getToken();
-      print('token ==>> $token');
-
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
         print('###### แสดงการทำงานของ foreground!');
         print('######  Message data: ${message.data}');
@@ -87,43 +83,77 @@ class _HomePageWidgetState extends State<HomePageWidget> {
         }
       });
 
-      await Firebase.initializeApp().then((value) async {
-        await FirebaseFirestore.instance
-            .collection('ptung')
-            .doc(docLogin)
-            .snapshots()
-            .listen((event) {
-          // print('event ==> ${event.data()}');
-          PtModel ptModel = PtModel.fromMap(event.data());
-          List<String> tokens = [];
-          try {
-            var resultTokens = ptModel.tokens;
-            tokens = resultTokens;
-          } catch (e) {
-            print('############ tokens ==> null');
-          }
-          print('### tokens ==>> $tokens');
+      FirebaseMessaging messaging = FirebaseMessaging.instance;
+      String token = await messaging.getToken();
+      print('############# token ==>> $token');
 
-          if (tokens.length == 0) {
-            tokens.add(token);
-            editTokensToFirebase(tokens);
+      await FirebaseFirestore.instance
+          .collection('ptung')
+          .doc(docLogin)
+          .collection('mytoken')
+          .where('token', isEqualTo: token)
+          .snapshots()
+          .listen((event) async {
+        bool status = true;
+        if (status) {
+          status = false;
+          if (event.docs.length == 0) {
+            // ไม่มี Token นี้ในฐานข้อมูล
+            print('ไม่มี Token นี้ในฐานข้อมูล');
+            Map<String, dynamic> data = {};
+            data['token'] = token;
+            await FirebaseFirestore.instance
+                .collection('ptung')
+                .doc(docLogin)
+                .collection('mytoken')
+                .doc()
+                .set(data)
+                .then((value) => print('#####  Create token Success'));
           } else {
-            bool status = true; // true ==> ไม่มี สมาชิค Token ซ้ำกัน
-            for (var item in tokens) {
-              if (item == token) {
-                status = false; // มี Token ซำ้
-              }
-            }
-
-            if (status) {
-              tokens.add(token);
-              editTokensToFirebase(tokens);
-            } else {
-              print('Token ตัวนี่มีในฐานข้อมูลแล้ว');
-            }
+            // มี Token นี่แล้ว
+            print(' มี Token นี่แล้ว');
           }
-        });
+        }
       });
+
+      // update token to array
+      // await Firebase.initializeApp().then((value) async {
+      //   await FirebaseFirestore.instance
+      //       .collection('ptung')
+      //       .doc(docLogin)
+      //       .snapshots()
+      //       .listen((event) {
+      //     // print('event ==> ${event.data()}');
+      //     PtModel ptModel = PtModel.fromMap(event.data());
+      //     List<String> tokens = [];
+      //     try {
+      //       var resultTokens = ptModel.tokens;
+      //       tokens = resultTokens;
+      //     } catch (e) {
+      //       print('############ tokens ==> null');
+      //     }
+      //     print('### tokens ==>> $tokens');
+
+      //     if (tokens.length == 0) {
+      //       tokens.add(token);
+      //       editTokensToFirebase(tokens);
+      //     } else {
+      //       bool status = true; // true ==> ไม่มี สมาชิค Token ซ้ำกัน
+      //       for (var item in tokens) {
+      //         if (item == token) {
+      //           status = false; // มี Token ซำ้
+      //         }
+      //       }
+
+      //       if (status) {
+      //         tokens.add(token);
+      //         editTokensToFirebase(tokens);
+      //       } else {
+      //         print('Token ตัวนี่มีในฐานข้อมูลแล้ว');
+      //       }
+      //     }
+      //   });
+      // }); // end
     });
   }
 

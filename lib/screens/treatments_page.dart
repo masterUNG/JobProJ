@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:therapist_buddy/screens/demo_read_sick.dart';
 
 import 'package:therapist_buddy/variables.dart';
 import 'patient_page.dart';
@@ -493,7 +494,11 @@ class _TreatmentsPageWidgetState extends State<TreatmentsPageWidget> {
                     ],
                   )
                 ],
-              )
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => DemoReadSick(docSick: '123123123'),)),
+                child: Text('Demo Read Sick'),
+              ),
             ],
           ),
         ),

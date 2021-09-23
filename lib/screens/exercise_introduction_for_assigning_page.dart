@@ -1,12 +1,15 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:therapist_buddy/utility/my_dialog.dart';
 import '../flutter_flow/flutter_flow_youtube_player.dart';
 
 import 'package:therapist_buddy/variables.dart';
 
 class ExerciseIntroductionForAssigningPageWidget extends StatefulWidget {
-  ExerciseIntroductionForAssigningPageWidget({Key key}) : super(key: key);
+  final int index;
+  ExerciseIntroductionForAssigningPageWidget({Key key, @required this.index})
+      : super(key: key);
 
   @override
   _ExerciseIntroductionForAssigningPageWidgetState createState() =>
@@ -17,6 +20,14 @@ class _ExerciseIntroductionForAssigningPageWidgetState
     extends State<ExerciseIntroductionForAssigningPageWidget> {
   int numberOfTimes = 0;
   int numberOfSets = 0;
+  int index;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    index = widget.index;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +38,17 @@ class _ExerciseIntroductionForAssigningPageWidgetState
           backgroundColor: Colors.white,
           leading: IconButton(
             onPressed: () async {
-              Navigator.pop(context);
+              if ((numberOfTimes == 0) || (numberOfSets == 0)) {
+                MyDialog().normalDialog(
+                    context, 'ข้อมูลไม่ครบ', 'กรุณาเลือก ครั้ง และ เซ็ด ด้วย');
+              } else {
+                Map<String, dynamic> map = {};
+                map['index'] = index;
+                map['times'] = numberOfTimes;
+                map['sets'] = numberOfSets;
+                print('### map ที่ส่งกลับ ===>> $map');
+                Navigator.pop(context, map);
+              }
             },
             icon: Icon(
               Icons.arrow_back_rounded,
@@ -182,7 +203,15 @@ class _ExerciseIntroductionForAssigningPageWidgetState
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               ElevatedButton(
-                                onPressed: () {},
+                                onPressed: () {
+                                  setState(() {
+                                    if (numberOfTimes <= 0) {
+                                      numberOfTimes = 0;
+                                    } else {
+                                      numberOfTimes--;
+                                    }
+                                  });
+                                },
                                 child: Icon(
                                   Icons.remove_rounded,
                                   size: 25,
@@ -212,7 +241,11 @@ class _ExerciseIntroductionForAssigningPageWidgetState
                                 ),
                               ),
                               ElevatedButton(
-                                onPressed: () {},
+                                onPressed: () {
+                                  setState(() {
+                                    numberOfTimes++;
+                                  });
+                                },
                                 child: Icon(
                                   Icons.add_rounded,
                                   size: 25,
@@ -278,7 +311,15 @@ class _ExerciseIntroductionForAssigningPageWidgetState
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               ElevatedButton(
-                                onPressed: () {},
+                                onPressed: () {
+                                  setState(() {
+                                    if (numberOfSets <= 0) {
+                                      numberOfSets = 0;
+                                    } else {
+                                      numberOfSets--;
+                                    }
+                                  });
+                                },
                                 child: Icon(
                                   Icons.remove_rounded,
                                   size: 25,
@@ -309,7 +350,11 @@ class _ExerciseIntroductionForAssigningPageWidgetState
                               ),
                               ElevatedButton(
                                 onPressed: () {
-                                  setState(() {});
+                                  setState(() {
+                                    setState(() {
+                                      numberOfSets++;
+                                    });
+                                  });
                                 },
                                 child: Icon(
                                   Icons.add_rounded,
